@@ -4,6 +4,7 @@ by Microsoft."""
 
 import io
 import logging
+import requests
 
 from . import core
 from . import csdl as edm
@@ -21,6 +22,7 @@ from ..py2 import (
     dict_keys,
     to_text)
 from ..xml import structures as xml
+from requests.auth import HTTPBasicAuth
 
 
 class ClientException(Exception):
@@ -269,14 +271,15 @@ class ClientCollection(core.EntityCollection):
             feed_url = uri.URI.from_octets(
                 str(feed_url) + "?" +
                 core.ODataURI.format_sys_query_options(sys_query_options))
-        request = http.ClientRequest(str(feed_url))
-        request.set_header('Accept', 'application/atom+xml')
-        self.client.process_request(request)
-        if request.status != 200:
+        resp = requests.get(feed_url, verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+#        request = http.ClientRequest(str(feed_url))
+#        request.set_header('Accept', 'application/atom+xml')
+#        self.client.process_request(request)
+        if resp.status_code != 200:
             raise UnexpectedHTTPResponse(
-                "%i %s" % (request.status, request.response.reason))
+                "%i %s" % (resp.status_code, resp.text))
         doc = core.Document(base_uri=feed_url)
-        doc.read(request.res_body)
+        doc.read(resp.content)
         if isinstance(doc.root, atom.Feed):
             if len(doc.root.Entry):
                 for e in doc.root.Entry:
@@ -929,13 +932,16 @@ class Client(app.Client):
             # load the service root from a file instead
             doc.read()
         else:
-            request = http.ClientRequest(str(self.service_root))
-            request.set_header('Accept', 'application/atomsvc+xml')
-            self.process_request(request)
-            if request.status != 200:
-                raise UnexpectedHTTPResponse(
-                    "%i %s" % (request.status, request.response.reason))
-            doc.read(request.res_body)
+            resp = requests.get(str(self.service_root), verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+#            print(resp.text)
+#            request = http.ClientRequest(str(self.service_root))
+#            request.set_header('Accept', 'application/atomsvc+xml')
+#            self.process_request(request)
+#            if request.status != 200:
+#                raise UnexpectedHTTPResponse(
+#                    "%i %s" % (request.status, request.response.reason))
+#            doc.read(request.res_body)
+            doc.read(resp.content)
         if isinstance(doc.root, app.Service):
             self.service = doc.root
             self.service_root = uri.URI.from_octets(doc.root.resolve_base())

@@ -7,7 +7,10 @@ import os
 import os.path
 import random
 import warnings
+import requests
 
+from requests.auth import HTTPBasicAuth
+from pyslet.http.params import MediaType
 from copy import copy
 from types import MethodType
 
@@ -3411,14 +3414,15 @@ class XMLEntity(MigratedClass):
                 self.auto_detect_encoding(self.data_source)
             self.open_file(self.data_source, self.encoding)
         elif src.scheme.lower() in ['http', 'https']:
-            if req_manager is None:
-                req_manager = http.Client()
-            req = http.ClientRequest(str(src))
-            req.set_header('Accept', "application/xml, text/*, */*")
-            req_manager.process_request(req)
-            if req.status == 200:
-                self.open_http_response(req.response, encoding)
-                mtype = req.response.get_content_type()
+            resp = requests.get(str(src), verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+#            if req_manager is None:
+#                req_manager = http.Client()
+#            req = http.ClientRequest(str(src))
+#            req.set_header('Accept', "application/xml, text/*, */*")
+#            req_manager.process_request(req)
+            if resp.status_code == 200:
+                self.open_http_response(resp, encoding)
+                mtype = MediaType.from_str(resp.headers["Content-Type"])
                 if mtype is None:
                     raise NotImplementedError
                 else:
@@ -3433,17 +3437,17 @@ class XMLEntity(MigratedClass):
                             self.encoding = "iso-8859-1"
                 # print "...reading %s stream with
                 # charset=%s"%(self.mimetype,self.encoding)
-                self.data_source = io.BytesIO(req.res_body)
+                self.data_source = io.BytesIO(resp.content)
                 self.close_source = True
                 if self.encoding is None:
                     self.auto_detect_encoding(self.data_source)
                 self.open_file(self.data_source, self.encoding)
-            elif req.status == 404:
+            elif resp.status_code == 404:
                 raise XMLMissingResourceError(
-                    str(req.status) + " " + str(req.response.reason))
+                    str(resp.status_code) + " " + str(resp.text))
             else:
                 raise XMLUnexpectedHTTPResponse(
-                    str(req.status) + " " + str(req.response.reason))
+                    str(resp.status_code) + " " + str(resp.text))
         else:
             raise XMLUnsupportedSchemeError
 
@@ -3461,8 +3465,8 @@ class XMLEntity(MigratedClass):
         self.encoding = encoding
         # update the entity's location with the last URL used to
         # retrieve it
-        self.location = src.request.url
-        mtype = src.get_content_type()
+        self.location = src.url
+        mtype = MediaType.from_str(src.headers["Content-Type"])
         if mtype is None:
             raise NotImplementedError
         else:
@@ -3475,7 +3479,7 @@ class XMLEntity(MigratedClass):
                     self.encoding = "iso-8859-1"
         # print "...reading %s stream with
         # charset=%s"%(self.mimetype,self.encoding)
-        self.data_source = io.BytesIO(src.request.res_body)
+        self.data_source = io.BytesIO(src.content)
         self.close_source = True
         self.open_file(self.data_source, self.encoding)
 

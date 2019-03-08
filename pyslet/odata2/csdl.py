@@ -506,18 +506,16 @@ class NameTableMixin(DictionaryLike):
         Values are always declared in the top-level scope, even if they
         contain the compounding character '.', however, you cannot
         declare "X" if you have already declared "X.Y" and vice versa."""
-        if value.name in self.nameTable:
-            raise DuplicateName(
-                "%s already declared in scope %s" % (value.name, self.name))
-        prefix = value.name + "."
-        for key in self.nameTable:
-            if key.startswith(prefix) or value.name.startswith(key + "."):
-                # Can't declare "X.Y" if "X.Y.Z" exists already and
-                # Can't declare "X.Y.Z" if "X.Y" exists already
-                raise IncompatibleNames(
-                    "Can't declare %s; %s already declared in scope %s" %
-                    (value.name, key, self.name))
-        self.nameTable[value.name] = value
+        if value.name not in self.nameTable:
+            prefix = value.name + "."
+            for key in self.nameTable:
+                if key.startswith(prefix) or value.name.startswith(key + "."):
+                    # Can't declare "X.Y" if "X.Y.Z" exists already and
+                    # Can't declare "X.Y.Z" if "X.Y" exists already
+                    raise IncompatibleNames(
+                        "Can't declare %s; %s already declared in scope %s" %
+                        (value.name, key, self.name))
+            self.nameTable[value.name] = value
 
     def undeclare(self, value):
         """Removes a value from the named scope.
