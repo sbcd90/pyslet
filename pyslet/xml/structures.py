@@ -35,6 +35,7 @@ from ..py2 import (
     uspace,
     UnicodeMixin)
 from ..unicode5 import CharClass
+from ..http.auth import get_basic_auth
 
 
 class XMLError(Exception):
@@ -3414,7 +3415,8 @@ class XMLEntity(MigratedClass):
                 self.auto_detect_encoding(self.data_source)
             self.open_file(self.data_source, self.encoding)
         elif src.scheme.lower() in ['http', 'https']:
-            resp = requests.get(str(src), verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+            username, password = get_basic_auth()
+            resp = requests.get(str(src), verify=False, auth=HTTPBasicAuth(username, password))
 #            if req_manager is None:
 #                req_manager = http.Client()
 #            req = http.ClientRequest(str(src))

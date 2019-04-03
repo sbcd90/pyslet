@@ -22,6 +22,7 @@ from ..py2 import (
     dict_keys,
     to_text)
 from ..xml import structures as xml
+from ..http.auth import get_basic_auth
 from requests.auth import HTTPBasicAuth
 
 
@@ -271,7 +272,8 @@ class ClientCollection(core.EntityCollection):
             feed_url = uri.URI.from_octets(
                 str(feed_url) + "?" +
                 core.ODataURI.format_sys_query_options(sys_query_options))
-        resp = requests.get(feed_url, verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+        username, password = get_basic_auth()
+        resp = requests.get(feed_url, verify=False, auth=HTTPBasicAuth(username, password))
 #        request = http.ClientRequest(str(feed_url))
 #        request.set_header('Accept', 'application/atom+xml')
 #        self.client.process_request(request)
@@ -932,7 +934,8 @@ class Client(app.Client):
             # load the service root from a file instead
             doc.read()
         else:
-            resp = requests.get(str(self.service_root), verify=False, auth=HTTPBasicAuth("CRMOPS", "Ondemand1"))
+            username, password = get_basic_auth()
+            resp = requests.get(str(self.service_root), verify=False, auth=HTTPBasicAuth(username, password))
 #            print(resp.text)
 #            request = http.ClientRequest(str(self.service_root))
 #            request.set_header('Accept', 'application/atomsvc+xml')

@@ -502,3 +502,17 @@ class AuthorizationParser(ParameterParser):
         cls = Credentials.scheme_class.get(lu_scheme, Credentials)
         self.parse_sp()
         return cls.from_words(self)
+
+username = ""
+password = ""
+
+
+def set_basic_auth(user, passwd):
+    global username
+    global password
+    username = user
+    password = passwd
+
+
+def get_basic_auth():
+    return username, password
